@@ -1,0 +1,25 @@
+{
+  "name": "ndownloader2",
+  "version": "1.0.0",
+  "description": "Ndownloader2 - Windows download manager that resolves protected file-host links in a real Edge window and downloads them with aria2c.",
+  "type": "module",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs",
+    "grab": "node cli.mjs"
+  },
+  "keywords": [
+    "download-manager",
+    "aria2",
+    "playwright",
+    "fuckingfast",
+    "windows"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "playwright-core": "^1.64.1"
+  }
+}

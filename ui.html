@@ -1,0 +1,410 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Ndownloader2</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 "Segoe UI", system-ui, sans-serif; background: #14161a; color: #e6e8ec; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 18px 20px 40px; }
+  h1 { font-size: 18px; margin: 0; font-weight: 600; }
+
+  .top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+  .folderbar { display: flex; gap: 8px; align-items: center; flex: 1; min-width: 320px; }
+  #folder { flex: 1; background: #1b1e24; color: #e6e8ec; border: 1px solid #2b303a; border-radius: 8px; padding: 8px 11px;
+    font-family: ui-monospace, Consolas, monospace; font-size: 12px; }
+  #folder:focus, textarea:focus, select:focus { outline: none; border-color: #3d7eff; }
+
+  button { background: #2b303a; color: #e6e8ec; border: 1px solid #3a4150; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  button:hover { background: #353b47; }
+  button.primary { background: #3d7eff; border-color: #3d7eff; color: #fff; font-weight: 600; }
+  button.primary:hover { background: #2f6ae8; }
+  button.play { background: #1f7a3d; border-color: #27a052; color: #eafff1; font-weight: 600; font-size: 14px; padding: 10px 22px; }
+  button.play:hover { background: #24924a; }
+  button.warn { background: #7a5b12; border-color: #a07a1a; color: #ffe9b0; }
+  button.on { background: #7a2b2b; border-color: #a33a3a; color: #ffd6d6; }
+  button.mini { padding: 2px 9px; font-size: 11.5px; border-radius: 6px; }
+  button.icon { padding: 2px 8px; font-size: 12px; border-radius: 6px; }
+  button:disabled { opacity: .4; cursor: default; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid #2b303a; margin-bottom: 14px; }
+  .tab { padding: 9px 18px; cursor: pointer; color: #8b93a1; border-bottom: 2px solid transparent; font-size: 13.5px; user-select: none; }
+  .tab:hover { color: #c8cfda; }
+  .tab.active { color: #fff; border-bottom-color: #3d7eff; }
+  .tab .badge { background: #2b303a; border-radius: 10px; padding: 1px 7px; font-size: 11px; margin-left: 6px; color: #b9c2d0; }
+  .tab.active .badge { background: #3d7eff; color: #fff; }
+
+  .pane { display: none; }
+  .pane.active { display: block; }
+
+  textarea { width: 100%; height: 130px; background: #1b1e24; color: #e6e8ec; border: 1px solid #2b303a; border-radius: 8px;
+    padding: 10px; font: 12px/1.6 ui-monospace, Consolas, monospace; resize: vertical; }
+  .bar { display: flex; gap: 8px; align-items: center; margin: 10px 0; flex-wrap: wrap; }
+
+  .scroll { max-height: 58vh; overflow-y: auto; border: 1px solid #23262d; border-radius: 8px; background: #171a1f; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed; }
+  thead th { position: sticky; top: 0; background: #1b1e24; z-index: 1; text-align: left; color: #8b93a1; font-weight: 500;
+    padding: 8px; border-bottom: 1px solid #2b303a; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  tbody td { padding: 7px 8px; border-bottom: 1px solid #20242b; vertical-align: middle; }
+  tbody tr:hover { background: #1c2027; }
+  td.name { font-family: ui-monospace, Consolas, monospace; word-break: break-all; }
+  .muted { color: #8b93a1; }
+  .mono { font-family: ui-monospace, Consolas, monospace; }
+  .pill { display: inline-block; padding: 1px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 600; white-space: nowrap; }
+  .s-queued, .s-ready { background: #23262d; color: #9aa3b2; }
+  .s-resolving, .s-checking { background: #24303f; color: #7fb3ff; }
+  .s-downloading { background: #1e3245; color: #66d9ef; }
+  .s-paused, .s-held { background: #3a3320; color: #e8cd7a; }
+  .s-done, .s-downloaded, .s-online { background: #16321f; color: #64d98a; }
+  .s-exists { background: #2c2a1a; color: #d9c96a; }
+  .s-failed, .s-offline, .s-no-download-button, .s-no-download-started, .s-verify-timeout, .s-stopped { background: #3a1c1c; color: #ff8a8a; }
+  .prog { height: 5px; background: #22262e; border-radius: 3px; overflow: hidden; margin-top: 5px; }
+  .prog i { display: block; height: 100%; width: 0; background: #3d7eff; transition: width .4s; }
+  .note { color: #ff8a8a; font-size: 11px; margin-top: 2px; font-family: ui-monospace, Consolas, monospace; }
+  .notice { color: #e8cd7a; font-size: 11px; margin-top: 2px; font-family: ui-monospace, Consolas, monospace; }
+  .empty { padding: 26px; text-align: center; color: #6b7382; font-size: 13px; }
+  #summary { margin-top: 12px; font-size: 12.5px; color: #b9c2d0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>Ndownloader2</h1>
+    <div class="folderbar">
+      <input id="folder" type="text" placeholder="Save files to...">
+      <button id="browse">Choose folder</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-grab" data-pane="grab">LinkGrabber <span class="badge" id="grabCount">0</span></div>
+    <div class="tab" id="tab-dl" data-pane="dl">Downloads <span class="badge" id="dlCount">0</span></div>
+  </div>
+
+  <div class="pane active" id="pane-grab">
+    <textarea id="links" placeholder="Paste one link per line, then press Add to list. A trailing #filename becomes the file name:
+https://fuckingfast.co/dqy8n6yocv2t#CoD_MW4_--_.part01.rar"></textarea>
+    <div class="bar">
+      <button id="add" class="primary">Add to list</button>
+      <button id="check">Check online</button>
+      <button id="clear">Clear list</button>
+      <span class="muted" id="checkState"></span>
+    </div>
+
+    <div class="scroll">
+      <table>
+        <colgroup><col style="width:34px"><col><col style="width:150px"><col style="width:110px"><col style="width:96px"><col style="width:40px"></colgroup>
+        <thead><tr><th>#</th><th>File</th><th>Host</th><th>Availability</th><th>Size</th><th></th></tr></thead>
+        <tbody id="pendingRows"></tbody>
+      </table>
+    </div>
+
+    <div class="bar" style="margin-top:14px">
+      <button id="start" class="play">▶ Start downloads</button>
+      <span class="muted" id="grabHint">Links are added to the list above, then all of them start together.</span>
+    </div>
+  </div>
+
+  <div class="pane" id="pane-dl">
+    <div class="bar">
+      <button id="pause" class="warn">Pause all</button>
+      <button id="slow">Slow mode: 10 KB/s</button>
+      <button id="clearDl">Clear list</button>
+      <label class="muted">at once</label>
+      <select id="parallel">
+        <option>1</option><option>2</option><option selected>3</option><option>4</option><option>5</option><option>6</option>
+      </select>
+      <span class="muted" id="mode"></span>
+    </div>
+
+    <div id="banner" class="banner" style="display:none;margin:10px 0;padding:11px 14px;border-radius:8px;background:#2a2110;border:1px solid #7a5b12;color:#ffd479">
+      <b>Cloudflare wants a human check.</b> A tab in this window is showing "Verify you are human" — click it there and this continues.
+    </div>
+
+    <div class="scroll">
+      <table>
+        <colgroup>
+          <col style="width:32px"><col><col style="width:120px"><col style="width:96px"><col style="width:150px">
+          <col style="width:88px"><col style="width:80px"><col style="width:132px">
+        </colgroup>
+        <thead><tr><th>#</th><th>File</th><th>Host</th><th>Status</th><th>Progress</th><th>Speed</th><th>Left</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div id="summary"></div>
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const rowState = {};
+let slowMode = false, paused = false, running = false, pending = [];
+
+const hm = (b) => {
+  if (!b || b < 0) return '—';
+  const u = ['B','KB','MB','GB','TB']; let i = 0;
+  while (b >= 1024 && i < u.length-1) { b /= 1024; i++; }
+  return b.toFixed(1) + ' ' + u[i];
+};
+const hms = (s) => {
+  if (!isFinite(s) || s <= 0) return '—';
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), x = Math.floor(s%60);
+  if (h) return h + 'h ' + m + 'm';
+  if (m) return m + 'm ' + x + 's';
+  return x + 's';
+};
+const nameOf = (d) => {
+  if (d.name) return d.name;
+  if (d.file) return d.file;
+  if (d.link) {
+    const i = d.link.indexOf('#');
+    if (i > 0) { try { return decodeURIComponent(d.link.slice(i+1)); } catch { return d.link.slice(i+1); } }
+    return d.link;
+  }
+  return '';
+};
+const post = (u, b) => fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined });
+
+/* ---------------- tabs ---------------- */
+function showPane(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.pane === name));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + name));
+}
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => showPane(t.dataset.pane));
+
+/* ---------------- linkgrabber ---------------- */
+function renderPending() {
+  const tb = $('pendingRows');
+  tb.innerHTML = '';
+  $('grabCount').textContent = pending.length;
+  if (!pending.length) {
+    tb.innerHTML = '<tr><td colspan="6" class="empty">No links yet. Paste some above and press Add to list.</td></tr>';
+    return;
+  }
+  pending.forEach((p, n) => {
+    const tr = document.createElement('tr');
+    const label = p.name || nameOf({ link: p.link });
+    tr.innerHTML = '<td class="muted">' + (n+1) + '</td>' +
+      '<td class="name">' + esc(label) + '</td>' +
+      '<td class="muted">' + esc(p.host || '') + '</td>' +
+      '<td><span class="pill s-' + (p.status || 'ready') + '">' + (p.status || 'ready') + '</span></td>' +
+      '<td class="mono muted">' + (p.sizeText || '—') + '</td>' +
+      '<td><button class="icon" title="Remove">✕</button></td>';
+    tr.querySelector('button').onclick = async () => { await post('/remove', { id: p.id }); };
+    tb.appendChild(tr);
+  });
+}
+const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+
+$('add').onclick = async () => {
+  const text = $('links').value.trim();
+  if (!text) return;
+  await post('/add', { links: text });
+  $('links').value = '';
+  showPane('grab');
+};
+$('clear').onclick = async () => { await post('/clear'); };
+$('check').onclick = async () => {
+  const r = await post('/check');
+  if (!r.ok) $('checkState').textContent = 'Nothing to check, or a check is already running.';
+  else $('checkState').textContent = 'Checking availability…';
+};
+$('start').onclick = async () => {
+  running = true;
+  showPane('dl');
+  const r = await post('/start', { outDir: $('folder').value.trim(), parallel: Number($('parallel').value) });
+  if (!r.ok) { $('summary').textContent = 'Bot is busy with another batch.'; running = false; }
+};
+
+/* ---------------- downloads ---------------- */
+function ensureRow(i) {
+  let tr = document.getElementById('r' + i);
+  if (!tr) {
+    tr = document.createElement('tr');
+    tr.id = 'r' + i;
+    tr.innerHTML = '<td class="muted">' + (i+1) + '</td><td class="name"></td><td class="host muted"></td>' +
+      '<td><span class="pill s-queued">queued</span></td>' +
+      '<td><div class="pct mono muted"></div><div class="prog"><i></i></div></td>' +
+      '<td class="speed mono">—</td><td class="left mono">—</td>' +
+      '<td><button class="mini act">Pause</button></td>';
+    $('rows').appendChild(tr);
+    tr.querySelector('.act').onclick = async () => {
+      const st = rowState[i] || {};
+      if (st.status === 'failed') { await post('/add', { links: [st.link] }); return; }
+      const isPaused = st.userPaused || st.status === 'paused';
+      await post(isPaused ? '/resumejob' : '/pausejob', { i });
+      st.userPaused = !isPaused;
+      rowState[i] = st;
+      paint(i);
+    };
+  }
+  return tr;
+}
+
+let dlTick = 0;
+function paint(i) {
+  const st = rowState[i] || {};
+  const tr = ensureRow(i);
+  const nameEl = tr.children[1], hostEl = tr.children[2], pill = tr.querySelector('.pill');
+  const pctEl = tr.querySelector('.pct'), progEl = tr.querySelector('.prog i');
+  const spEl = tr.querySelector('.speed'), leftEl = tr.querySelector('.left'), act = tr.querySelector('.act');
+
+  const label = nameOf(st);
+  if (label) {
+    nameEl.innerHTML = esc(label);
+    if (st.reason || st.note) { const n = document.createElement('div'); n.className='note'; n.textContent = (st.reason||st.note).slice(0,160); nameEl.appendChild(n); }
+    else if (st.notice) { const n = document.createElement('div'); n.className='notice'; n.textContent = st.notice.slice(0,160); nameEl.appendChild(n); }
+  }
+  if (st.host) hostEl.textContent = st.host;
+
+  const status = st.status || 'queued';
+  pill.className = 'pill s-' + status;
+  pill.textContent = status;
+
+  const got = st.bytes || 0, total = st.expected || 0;
+  if (total) {
+    // A finished file is 100%, even when the page's stated size was rounded.
+    const pct = status === 'done' ? 100 : Math.min(99, Math.floor(got / total * 100));
+    pctEl.textContent = hm(got) + ' / ' + hm(total) + ' (' + pct + '%)';
+    progEl.style.width = (status === 'done' ? 100 : Math.min(100, got / total * 100)) + '%';
+  } else {
+    pctEl.textContent = got ? hm(got) : '—';
+    progEl.style.width = '0%';
+  }
+  const sp = st.speed || 0;
+  spEl.textContent = (status === 'downloading' && sp) ? hm(sp) + '/s' : '—';
+  leftEl.textContent = (status === 'downloading' && total && sp > 0) ? hms((total - got) / sp)
+    : (total && got ? hm(total - got) : '—');
+
+  const isDone = ['done','exists','failed','stopped'].includes(status);
+  act.style.display = (status === 'queued') ? 'none' : '';
+  act.textContent = status === 'failed' ? 'Retry' : ((st.userPaused || status === 'paused') ? 'Resume' : 'Pause');
+  dlTick++;
+  $('dlCount').textContent = Object.values(rowState).filter(x => !['done','exists','failed','stopped'].includes(x.status)).length;
+}
+
+function applyDownload(e) {
+  const st = rowState[e.i] || (rowState[e.i] = {});
+  Object.assign(st, e);
+  if (e.t === 'progress') st.status = 'downloading';
+  if (e.t === 'done') st.status = e.ok ? 'done' : 'failed';
+  paint(e.i);
+}
+
+/* ---------------- events ---------------- */
+const es = new EventSource('/events');
+es.onmessage = (ev) => {
+  const d = JSON.parse(ev.data);
+  switch (d.t) {
+    case 'init':
+      if (d.outDir) $('folder').value = d.outDir;
+      if (d.parallel) $('parallel').value = d.parallel;
+      running = d.running; paused = !!d.paused; slowMode = (d.limitKbps || 0) > 0;
+      $('pause').textContent = paused ? 'Resume all' : 'Pause all';
+      $('slow').classList.toggle('on', slowMode);
+      updateMode();
+      pending = d.pending || [];
+      renderPending();
+      Object.keys(rowState).forEach(k => delete rowState[k]);
+      $('rows').innerHTML = '';
+      (d.rows || []).forEach((r, i) => { if (r) { rowState[i] = { ...r }; paint(i); } });
+      return;
+    case 'pending': pending = d.items || []; renderPending(); return;
+    case 'pending-item': {
+      const p = pending.find(x => x.id === d.id);
+      if (p) { Object.assign(p, d); delete p.t; renderPending(); }
+      return;
+    }
+    case 'pending-done': $('checkState').textContent = 'Availability check finished.'; return;
+    case 'folder': $('folder').value = d.outDir; return;
+    case 'challenge': $('banner').style.display = d.on ? 'block' : 'none'; return;
+    case 'error': $('summary').textContent = d.message; return;
+    case 'started': running = true; updateMode(); return;
+    case 'finished': running = false; paused = false; $('pause').textContent = 'Pause all'; updateMode(); return;
+    case 'control':
+      paused = !!d.paused; slowMode = (d.limitKbps || 0) > 0;
+      if (d.parallel) $('parallel').value = d.parallel;
+      $('pause').textContent = paused ? 'Resume all' : 'Pause all';
+      $('slow').classList.toggle('on', slowMode);
+      updateMode();
+      return;
+    case 'dupefiles': {
+      const el = document.createElement('div');
+      el.style.cssText = 'margin-top:8px;padding:10px 12px;border-radius:8px;background:#3a1c1c;border:1px solid #7a2b2b;color:#ffb0b0;font-size:12.5px';
+      el.innerHTML = '<b>Two downloads are the same file.</b><br>' +
+        (d.pairs || []).map(pr => `${esc(pr[0])} and ${esc(pr[1])} are identical`).join('<br>') +
+        '<br>One of them is wrong — delete it and download that link again.';
+      $('summary').appendChild(el);
+      return;
+    }
+    case 'summary':
+      running = false;
+      $('summary').textContent = Object.entries(d.counts).map(([k,v]) => k + ': ' + v).join('   |   ');
+      return;
+    case 'partset': {
+      const notes = (d.sets || []).filter(s => s.parts.length > 1 || s.gaps.length);
+      if (!notes.length) return;
+      const el = document.createElement('div');
+      el.style.cssText = 'margin-top:8px;padding:10px 12px;border-radius:8px;background:#2a2110;border:1px solid #7a5b12;color:#ffd479;font-size:12.5px';
+      el.innerHTML = notes.map(s =>
+        `Multi-volume set: parts ${s.parts[0]}–${s.parts[s.parts.length-1]} (${s.parts.length} file${s.parts.length>1?'s':''})` +
+        (s.gaps.length ? ` — <b>MISSING part ${s.gaps.join(', ')}</b>` : ' — no gaps') +
+        `<br>Extract from <b>part${String(s.parts[0]).padStart(2,'0')}</b> with 7-Zip or WinRAR, not Windows Explorer.`
+      ).join('<hr style="border:none;border-top:1px solid #7a5b12;margin:8px 0">');
+      $('summary').appendChild(el);
+      return;
+    }
+    case 'clearrows':
+      Object.keys(rowState).forEach(k => delete rowState[k]);
+      $('rows').innerHTML = '';
+      $('summary').textContent = '';
+      $('dlCount').textContent = '0';
+      return;
+    default:
+      if (typeof d.i === 'number') applyDownload(d);
+  }
+};
+
+function updateMode() {
+  const bits = [];
+  if (paused) bits.push('paused');
+  bits.push(slowMode ? 'limited to 10 KB/s' : 'full speed');
+  $('mode').textContent = bits.join(' · ');
+}
+
+$('browse').onclick = async () => {
+  const j = await (await post('/browse')).json();
+  if (j.outDir) $('folder').value = j.outDir;
+};
+$('folder').onchange = () => post('/folder', { outDir: $('folder').value.trim() });
+$('pause').onclick = async () => {
+  if (!running) return;
+  paused = !paused;
+  await post(paused ? '/pause' : '/resume');
+  $('pause').textContent = paused ? 'Resume all' : 'Pause all';
+  updateMode();
+};
+$('slow').onclick = async () => {
+  slowMode = !slowMode;
+  $('slow').classList.toggle('on', slowMode);
+  await post('/limit', { kbps: slowMode ? 10 : 0 });
+  updateMode();
+};
+$('parallel').onchange = () => post('/parallel', { parallel: Number($('parallel').value) });
+$('clearDl').onclick = async () => {
+  const r = await post('/clearrows');
+  if (!r.ok) { $('summary').textContent = 'Stop the current batch before clearing the list.'; return; }
+  Object.keys(rowState).forEach(k => delete rowState[k]);
+  $('rows').innerHTML = '';
+  $('summary').textContent = '';
+  $('dlCount').textContent = '0';
+};
+
+// Ctrl+Enter adds, then starts.
+$('links').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { $('add').click(); }
+});
+</script>
+</body>
+</html>

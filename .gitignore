@@ -1,0 +1,10 @@
+node_modules/
+tools/aria2c.exe
+.profile/
+.staging/
+logs/
+downloads/
+links.txt
+*.log
+.DS_Store
+Thumbs.db
